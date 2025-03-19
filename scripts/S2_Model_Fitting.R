@@ -7,9 +7,9 @@ thinning_index <- as.integer(args[1])  # SLURM_ARRAY_TASK_ID passed here
 # Define thinning factors and corresponding parameters
 thinning_factors <- c(1, 10, 100, 250, 500, 1000)
 n_thin <- thinning_factors[thinning_index + 1]  # +1 because array starts at 0
-
+# n_thin = 1
 # Calculate required n.batch (rounded up to ensure enough samples)
-n_batch <- ceiling((4000 * n_thin + 3000) / 25)
+n_batch <- ceiling((20000 * n_thin + 3000) / 25)
 
 
 
@@ -147,9 +147,9 @@ accept.rate = 0.43 # leave as default
 # Total MCMC samples in each chain = n.batch*batch.length
 n.batch = n_batch
 batch.length = 25 #default
-n.burn = 3000 #default
+n.burn = 3000 
 n.thin = n_thin
-n.chains = 4
+n.chains = 1
 
 #   MCMC samples in each of 4 chains 
 
@@ -189,8 +189,14 @@ n.report <- 200 # Report progress at every 200th batch.
 ###########################################################################
 # Model fitting -----------------------------------------------------------
 # Specify formula
-occ.formula = ~ scale(bio5) + I(scale(bio5)^2) + scale(bio12) + I(scale(bio12)^2) + 
-  scale(roadLength) + scale(pd_mean) + scale(der) + I(scale(der)^2)
+occ.formula = ~ scale(bio5) + I(scale(bio5)^2) +scale(bio6) + I(scale(bio6)^2) + 
+  scale(bio12) + I(scale(bio12)^2) + scale(bio15) + I(scale(bio15)^2) +
+  scale(dem) + I(scale(dem)^2) +
+  scale(slope) + I(scale(slope)^2) +
+  scale(aspect) +
+  scale(tpi) + I(scale(tpi)^2) +
+  scale(tri) + I(scale(tri)^2) +
+  scale(rock)
 
 det.formula = ~ scale(effort) #assuume no variation in detection probability
 
@@ -224,7 +230,7 @@ out.sfMsPGOcc <- sfMsPGOcc(occ.formula = occ.formula,
                            #k.fold.seed = 123
 
 save(out.sfMsPGOcc, 
-     file = paste0("models/model_sfMsPGOcc_1981-2010_nthin", n_thin, "_nbatch", n_batch, ".RData"))
+     file = paste0("models/model_sfMsPGOcc_1981-2010_nthin", n.thin, "_nbatch", n.batch, "_nchain", n.chain, "_nburn", n.burn, ".RData"))
 
 end_time <- Sys.time()
 print(paste("End Time:", end_time))
