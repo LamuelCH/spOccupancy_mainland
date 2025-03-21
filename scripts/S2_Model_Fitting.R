@@ -2,15 +2,27 @@
 # For Slurm Script Array  -------------------------------------------------
 # Read command-line argument for array index
 args <- commandArgs(trailingOnly = TRUE)
-thinning_index <- as.integer(args[1])  # SLURM_ARRAY_TASK_ID passed here
+job_index <- as.integer(args[1])  # SLURM_ARRAY_TASK_ID passed here
+# job_index = 4
 
+
+
+# Define MCMC parameter ---------------------------------------------------
 # Define thinning factors and corresponding parameters
-thinning_factors <- c(1, 10, 100, 250, 500, 1000)
-n_thin <- thinning_factors[thinning_index + 1]  # +1 because array starts at 0
-# n_thin = 1
-# Calculate required n.batch (rounded up to ensure enough samples)
-n_batch <- ceiling((20000 * n_thin + 3000) / 25)
+# thinning_factors <- c(1, 10, 100, 1000)
+sample_factors = c(1000, 2000, 4000, 8000, 16000)
 
+# n.thin <- thinning_factors[job_index + 1]  # +1 because array starts at 0
+n.thin = 1 # use this arg to test init value
+n.sample = sample_factors[job_index + 1] # use this arg to test the init value with single chain
+
+n.burn = 2000 * n.thin # disregard first 2000 posterior samples (not iterations)  
+
+batch.length = 25 # Keep it default
+n.batch <- ceiling((n.burn/n.thin + n.sample) * n.thin / 25) # total sample per chain = n_batch * batch.length
+
+
+n.chains = 1 
 
 
 # Original script ---------------------------------------------------------
@@ -145,11 +157,11 @@ inits <- list(alpha.comm = 0, #Community level detection coefficients
 accept.rate = 0.43 # leave as default
 
 # Total MCMC samples in each chain = n.batch*batch.length
-n.batch = n_batch
-batch.length = 25 #default
-n.burn = 3000 
-n.thin = n_thin
-n.chains = 1
+# n.batch = n_batch
+# batch.length = 25 #default
+# n.burn = 3000 
+# n.thin = n_thin
+# n.chains = 1
 
 #   MCMC samples in each of 4 chains 
 
