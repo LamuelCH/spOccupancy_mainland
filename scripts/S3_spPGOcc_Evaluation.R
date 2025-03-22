@@ -2,7 +2,7 @@ library(spOccupancy)
 
 
 # Load model --------------------------------------------------------------
-load("models/model_sfMsPGOcc_1981-2010_nthin40_nbatch6800_burn10000_reducdedSP.RData")
+load("models/model_sfMsPGOcc_1981-2010_nthin1_nbatch160_nchain1_nburn2000.RData")
 
 
 

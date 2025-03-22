@@ -1,3 +1,21 @@
+---
+title: "S1_Data_Wrangle"
+author: "Lamuel C.H. CHUNG"
+date: "2025-03-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
 # Load required libraries
 library(tidyverse)
 library(ggmap)
@@ -7,7 +25,10 @@ library(sf)
 
 # Setting Project Environment ---------------------------------------------
 # Set the path to the root 'data' directory
-# setwd(".")
+ setwd(".")
+
+# Enable parallel processing whenever possible
+options(mc.cores = parallel::detectCores())
 
 # VICTORIA VBA DATA WRANGLING ------------------------------------------------------
   # Specify folder path 
@@ -56,7 +77,6 @@ library(sf)
     df_VBA = df_VBA %>% 
       select(Source = Source,
              ProjectID = Project.ID,
-             SiteName = Site.Name,
              Year = year,
              Month = month,
              Day = day,
@@ -129,7 +149,6 @@ library(sf)
     df_BioNet = df_BioNet %>% 
       select(Source = Source,
              ProjectID = DatasetName,
-             SiteName = Description,
              Year = year,
              Month = month,
              Day = day,
@@ -181,24 +200,17 @@ library(sf)
       st_drop_geometry()  # Remove spatial features to keep as a data frame  
     
   # Exclude plots surveyed only once
-    # Exclude plots surveyed only once and add numeric project IDs
     df_filtered <- df %>%
-      mutate(replicate = ((Year - 2012) %/% 2) + 1) %>%  # Assign two years as one replicate 
+      mutate(replicate =  ((Year - 2012) %/% 2) + 1) %>%  #assign two years as one replicate 
       group_by(Easting_3577, Northing_3577) %>%  # Group by plotID
       filter(n_distinct(replicate) >= 2) %>%  # Keep plots with at least 2 unique replicates
       ungroup() %>% 
       arrange(Easting_3577, Northing_3577) %>%  
-      mutate(plotID = dense_rank(paste(Easting_3577, Northing_3577, sep = "_"))) %>%
-      # Create a numeric projectID by assigning integers to each unique character projectID
-      mutate(ProjectID = as.integer(factor(ProjectID, levels = unique(ProjectID))))
+      mutate(plotID = dense_rank(paste(Easting_3577, Northing_3577, sep = "_")))
     
     write.csv(df_filtered, "input/df.csv", row.names = FALSE)
     
-    # Count unique projectID values for random effect
-    num_unique_projects <- length(unique(df_filtered$ProjectID))
     
-    # Display the result 
-    print(paste("Number of unique projectID values:", num_unique_projects))  
     
   # Convert df into long format 
     y.long <- df_filtered %>%
@@ -207,15 +219,8 @@ library(sf)
       ungroup() %>%
       glimpse()  
     
-    # y.long <- y.long %>%
-      # left_join(
-        # df_filtered %>%
-          # select(plotID, replicate, Genus, ProjectID) %>%
-          # distinct(plotID, replicate, Genus, .keep_all = TRUE),
-        # by = c("plotID", "replicate", "Genus")
-      # ) %>%
-      # glimpse()
-# length(unique(y.long$ProjectID))
+    
+
 
 # FORMAT DETECTION NON-DETECTION DATA ------------------------------------------
 # Species codes, adjust accordingly
@@ -317,7 +322,7 @@ apply(y, 1, sum, na.rm = TRUE)
   
   # check the structure of our detection covariates 
   str(effort.matrix)
-  head(effort.matrix)
+  
   # det.covs = list(effort = effort.matrix)
   
   # Check if the NA values aligned between y and det
@@ -335,45 +340,41 @@ apply(y, 1, sum, na.rm = TRUE)
   str(na_y)
 
   
+# project matrix
+#[note] the model do not allow factor input as detection covariates, input must be numeric
+  # Identify the ProjectID for each plotID and replicate
+  # project.df <- df_filtered %>%
+    # mutate(replicate = ((Year - 2012) %/% 2) + 1) %>%  # Map 2012-2021 to 1-10
+    # group_by(plotID, replicate) %>%
+    # summarize(ProjectID = first(ProjectID)) %>%  # Use the first ProjectID for each plotID and replicate
+    # ungroup() %>%
+    # glimpse()
   
+  # Convert ProjectID to a factor (if it's not already)
+  # project.df <- project.df %>%
+    # mutate(ProjectID = as.factor(ProjectID))
   
-# Random Effects: project matrix
-  # Single random intercept on detection 
-  # p.RE <- list(levels = 58, sigma.sq.p = 0.5)
+  # Initialize project matrix with NAs
+  # project.matrix <- matrix(NA, nrow = length(plot.codes), ncol = K, 
+                           # dimnames = list(plot.codes, replicate))
+  
+  # Fill the matrix
+  # for (j in 1:length(plot.codes)) {
+    # for (k in 1:K) {
+      # Get ProjectID for plot j and replicate k
+      # val <- project.df %>%
+        # filter(plotID == plot.codes[j], replicate == k) %>%
+        # pull(ProjectID)
+      
+      # Assign ProjectID to the matrix (if it exists)
+      # project.matrix[j, k] <- ifelse(length(val) > 0, as.character(val), NA)
+    # }
+  # }
+  
+  # Check the structure of the project matrix
+  # str(project.matrix)
+  # head(project.matrix)
 
-  # Create detection random effect matrix with ordered rows and columns
-  project.matrix <- df_filtered %>%
-    # Select only the relevant columns
-    select(plotID, replicate, ProjectID) %>%
-    # Take the first projectID for each plotID-replicate combination
-    distinct(plotID, replicate, .keep_all = TRUE) %>%
-    # Sort by plotID to control row order
-    arrange(plotID) %>%
-    # Reshape to wide format with explicit column order
-    pivot_wider(
-      id_cols = plotID,
-      names_from = replicate,
-      values_from = ProjectID,
-      names_sort = TRUE  # Sort the column names numerically
-    ) %>%
-    # Convert to matrix
-    column_to_rownames("plotID") %>%
-    as.matrix()
-  
-  # Check the result
-  head(project.matrix)
-  
-  
-  # Check if the NA values aligned between y and det
-  na_project <- is.na(project.matrix)
-  na_y <- is.na(y[1,,]) #Here I just use the first species, but it should be identical for all species. 
-  
-  # identical(na_effort, na_y)
-  # Identify positions where the NA structure differs
-  diff_positions <- which(na_project != na_y, arr.ind = TRUE)
-  
-  # Print the differing positions
-  print(diff_positions)
 
 
 # Format site coordinates -------------------------------------------------
@@ -417,14 +418,13 @@ print(rows_with_na) # plot 794 contains NA value
   # Remove rows in all dataset with NA values 
   beta_clean <- beta[-rows_with_na, ]# Remove rows from occ.covs
   effort_clean <- effort.matrix[-rows_with_na, ]
-  project_clean <- project.matrix[-rows_with_na, ]
+  # project_clean <- project.matrix[-rows_with_na, ]
   y_clean <- y[ , -rows_with_na, ]                # Remove corresponding rows from y
   coords_clean <- coords[-rows_with_na, ]      # Remove corresponding rows from coords
   
   
   write.csv(beta_clean, "input/beta.csv", row.names = FALSE)
   write.csv(effort_clean, "input/effort.csv", row.names = FALSE)
-  write.csv(project_clean, "input/project.csv", row.names = FALSE)
   write.csv(y_clean, "input/y.csv", row.names = FALSE)
   write.csv(coords_clean, "input/coords.csv", row.names = FALSE)
   
@@ -434,8 +434,7 @@ print(rows_with_na) # plot 794 contains NA value
   y = y_clean
   str(y)
   
-  det.covs = list(effort = effort_clean,
-                  project = project_clean)
+  det.covs = list(effort = effort_clean)
   str(det.covs)
   
   occ.covs = beta_clean
@@ -450,25 +449,104 @@ print(rows_with_na) # plot 794 contains NA value
                     coords = coords)
   str(data.sfMsPGOcc)
   
-  save(data.sfMsPGOcc, file = "input/list_sfMsPGOcc_1980-2010.RData")
+  # save(data.sfMsPGOcc, file = "input/list_sfMsPGOcc_1980-2010.RData")
 
 # Test run
-# test.sfMsPGOcc <- spMsPGOcc(occ.formula = ~ scale(bio5) + I(scale(bio5)^2) +scale(bio6) + I(scale(bio6)^2) + 
-                              # scale(bio12) + I(scale(bio12)^2) + scale(bio15) + I(scale(bio15)^2) +
-                              # scale(dem) + I(scale(dem)^2) +
-                              # scale(slope) + I(scale(slope)^2) +
-                              # scale(aspect) +
-                              # scale(tpi) + I(scale(tpi)^2) +
-                              # scale(tri) + I(scale(tri)^2) +
-                              # scale(rock),
-                            # det.formula = ~ scale(effort) + (1|project), 
-                            # data = data.sfMsPGOcc,
-                            # n.batch = 10, 
-                            # batch.length = 25, 
-                            # cov.model = 'exponential', 
-                            # NNGP = TRUE, 
-                            # verbose = FALSE) 
+test.sfMsPGOcc <- spMsPGOcc(occ.formula = ~ scale(bio5) + I(scale(bio5)^2) +scale(bio6) + I(scale(bio6)^2) + 
+                              scale(bio12) + I(scale(bio12)^2) + scale(bio15) + I(scale(bio15)^2) +
+                              scale(dem) + I(scale(dem)^2) +
+                              scale(slope) + I(scale(slope)^2) +
+                              scale(aspect) +
+                              scale(tpi) + I(scale(tpi)^2) +
+                              scale(tri) + I(scale(tri)^2) +
+                              scale(rock),
+                            det.formula = ~ scale(effort), 
+                            data = data.sfMsPGOcc,
+                            n.batch = 10, 
+                            batch.length = 25, 
+                            cov.model = 'exponential', 
+                            NNGP = TRUE, 
+                            verbose = FALSE) 
 
-# summary(test.sfMsPGOcc, level = 'community')
+summary(test.sfMsPGOcc, level = 'community')
 
 # Data ready for model fitting
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Assuming data.msom is your list and y is the array within it
+# dimnames(data.sfMsPGOcc$y)[[3]] <- as.character(1:5)
+
+# Now check the structure again
+# str(data.sfMsPGOcc)
+
+# save(data.sfMsPGOcc, file = "RStudio/spOccupancy_NSW_20241219/input/data.sfMsPGOcc.RData")
+
+# Test run ---------------------------------------------------------------
+# out.msom <- sfMsPGOcc(occ.formula = ~ scale(bio5) + I(scale(bio5)^2) +  # Quadratic for bio5
+                        # scale(bio12) + I(scale(bio12)^2) + # Quadratic for bio12
+                        # scale(roadLength) +              # Linear for road density
+                        # scale(pd_mean) +        # Linear for population density
+                        # scale(der) + I(scale(der)^2),  # Quadratic for depth of regolith, or do we expect expotential relationship?
+                      # det.formula = ~ scale(det_clean),
+                      # data = data.sfMsPGOcc,
+                      # n.batch = 10,
+                      # n.chains = 4,
+                      # n.factors = 1,
+                      # batch.length = 25, 
+                      # cov.model = 'exponential', 
+                      # NNGP = TRUE,
+                      # n.neighbors = 15) 
+
+# summary(out.msom)
+# names(out.msom)
+
+# summary(out.msom$lambda.samples)
+
+# Data ready to go.
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

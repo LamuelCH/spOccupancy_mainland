@@ -1,20 +1,21 @@
-
 # For Slurm Script Array  -------------------------------------------------
 # Read command-line argument for array index
 args <- commandArgs(trailingOnly = TRUE)
 job_index <- as.integer(args[1])  # SLURM_ARRAY_TASK_ID passed here
-# job_index = 4
+ job_index = 1
 
 
 
 # Define MCMC parameter ---------------------------------------------------
 # Define thinning factors and corresponding parameters
-# thinning_factors <- c(1, 10, 100, 1000)
-sample_factors = c(1000, 2000, 4000, 8000, 16000)
+thinning_factors <- c(1, 10, 100, 1000)
+# sample_factors = c(1000, 2000, 4000, 8000, 16000, 32000)
 
-# n.thin <- thinning_factors[job_index + 1]  # +1 because array starts at 0
-n.thin = 1 # use this arg to test init value
-n.sample = sample_factors[job_index + 1] # use this arg to test the init value with single chain
+n.thin <- thinning_factors[job_index + 1]  # +1 because array starts at 0
+# n.thin = 1 # use this arg to test init value
+
+#n.sample = sample_factors[job_index + 1] # use this arg to test the init value with single chain
+n.sample = 1000
 
 n.burn = 2000 * n.thin # disregard first 2000 posterior samples (not iterations)  
 
@@ -22,7 +23,7 @@ batch.length = 25 # Keep it default
 n.batch <- ceiling((n.burn/n.thin + n.sample) * n.thin / 25) # total sample per chain = n_batch * batch.length
 
 
-n.chains = 1 
+n.chains = 4 
 
 
 # Original script ---------------------------------------------------------
@@ -53,7 +54,7 @@ n.factors <- 2
 
 
 
-# Ordering species in detection-nondetection array ------------------------
+# Ordering species in detection-non detection array ------------------------
 # careful consideration of the ordering of species can lead to:
 # (1) increased interpretability of the factors and factor loadings; 
 # (2) faster model convergence; and 
@@ -70,7 +71,7 @@ sp.names
 # 0.030587604     0.293265361 
 
 # Reorder species:
-# 1.  Place a common species first
+# 1. Place a common species first
 # 2. for the remaning q-1 factors, place species that believed will show different occurrence patterns than the first species and the other species placed before it 
 sp.ordered = c("Wallabia",
                "Rattus",
@@ -87,7 +88,6 @@ sp.ordered = c("Wallabia",
                "Isoodon",
                "Pseudocheirus",
                "Oryctolagus"
-               
                # "Acrobates", 
                # "Aepyprymnus",
                # "Bos", 
@@ -129,16 +129,33 @@ dist.data <- dist(data.ordered$coords)
 # Exponential correlation model
 cov.model <- "exponential"
 # Specify all other initial values identical to lfMsPGOcc() from before
-# Number of species
+# Number   of species
 N <- nrow(data.ordered$y)
+
 # Initiate all lambda initial values to 0.
-lambda.inits <- matrix(0, N, n.factors)
+# lambda.inits <- matrix(0, N, n.factors)
 # Set diagonal elements to 1
-diag(lambda.inits) <- 1
+# diag(lambda.inits) <- 1
 # Set lower triangular elements to random values from a standard normal dist
-lambda.inits[lower.tri(lambda.inits)] <- rnorm(sum(lower.tri(lambda.inits)))
+# lambda.inits[lower.tri(lambda.inits)] <- rnorm(sum(lower.tri(lambda.inits)))
 # Check it out
-lambda.inits
+# lambda.inits
+
+# Initiate lambda value based on preliminary model
+# Extract the mean values from the preliminary model
+lambda_means <- c(
+  # Factor 1
+  1.00000, -1.61435, 1.01789, 0.04355, 1.13166, 0.06906, 2.88112, 1.94999,
+  -0.35744, -0.40666, -0.70650, -1.35653, -0.93346, 0.07471, 0.80270,
+  # Factor 2
+  0.00000, 1.00000, -1.59665, 0.83760, 0.98227, -3.95214, -1.54852, -0.20547,
+  -0.14734, 1.02661, -0.66371, 1.09775, 1.84275, -1.28563, -0.46241
+)
+
+# Create the lambda.inits matrix
+lambda.inits <- matrix(lambda_means, nrow = N, ncol = n.factors)
+
+
 
 
 # Create list of initial values.
@@ -210,7 +227,7 @@ occ.formula = ~ scale(bio5) + I(scale(bio5)^2) +scale(bio6) + I(scale(bio6)^2) +
   scale(tri) + I(scale(tri)^2) +
   scale(rock)
 
-det.formula = ~ scale(effort) #assuume no variation in detection probability
+det.formula = ~ scale(effort) + (1 | project) #assuume no variation in detection probability
 
 
 
@@ -242,7 +259,7 @@ out.sfMsPGOcc <- sfMsPGOcc(occ.formula = occ.formula,
                            #k.fold.seed = 123
 
 save(out.sfMsPGOcc, 
-     file = paste0("models/model_sfMsPGOcc_1981-2010_nthin", n.thin, "_nbatch", n.batch, "_nchain", n.chain, "_nburn", n.burn, ".RData"))
+     file = paste0("models/model_sfMsPGOcc_1981-2010_nthin", n.thin, "_nbatch", n.batch, "_nchain", n.chains, "_nburn", n.burn, ".RData"))
 
 end_time <- Sys.time()
 print(paste("End Time:", end_time))
