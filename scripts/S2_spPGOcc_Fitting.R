@@ -8,16 +8,16 @@ job_index <- as.integer(args[1])  # SLURM_ARRAY_TASK_ID passed here
 
 # Define MCMC parameter ---------------------------------------------------
 # Define thinning factors and corresponding parameters
-thinning_factors <- c(1, 10, 100, 1000)
+thinning_factors <- c(1, 10, 100, 250, 500)
 #sample_factors = c(1000, 2000, 4000, 8000, 16000, 32000, 64000)
 
 n.thin <- thinning_factors[job_index + 1]  # +1 because array starts at 0
 # n.thin = 1 # use this arg to test init value
 
 # n.sample = sample_factors[job_index + 1] # use this arg to test the init value with single chain
-n.sample = 1000
+n.sample = 2000
 
-n.burn = 2000 * n.thin # disregard first 2000 posterior samples (not iterations)  
+n.burn = 3000 * n.thin # disregard first 2000 posterior samples (not iterations)  
 
 batch.length = 25 # Keep it default
 n.batch <- ceiling((n.burn/n.thin + n.sample) * n.thin / 25) # total sample per chain = n_batch * batch.length
@@ -193,7 +193,7 @@ out.spPGOcc = spPGOcc(occ.formula = occ.formula,
 
 
 save(out.spPGOcc, 
-     file = paste0("models/model_spPGOcc_1981-2010_nthin", n.thin, "_nbatch", n.batch, "_nchain", n.chains, "_nburn", n.burn, ".RData"))
+     file = paste0("models/spPGOcc/model_spPGOcc_1981-2010_nthin", n.thin, "_nbatch", n.batch, "_nchain", n.chains, "_nburn", n.burn, ".RData"))
 
 end_time <- Sys.time()
 print(paste("End Time:", end_time))

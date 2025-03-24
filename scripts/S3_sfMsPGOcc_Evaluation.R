@@ -109,7 +109,7 @@ summary(out.sfMsPGOcc$lambda.samples)
 
 
 # Load model --------------------------------------------------------------
-load("models/model_sfMsPGOcc_1981-2010_nthin1_nbatch160_ncha")
+load("models/sfMsPGOcc/model_sfMsPGOcc_1981-2010_nthin10_nbatch1200_nchain4_nburn20000.RData")
 
 
 # Overall model performance -----------------------------------------------

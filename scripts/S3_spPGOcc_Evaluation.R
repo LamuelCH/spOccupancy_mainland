@@ -2,26 +2,26 @@ library(spOccupancy)
 
 
 # Load model --------------------------------------------------------------
-load("models/model_sfMsPGOcc_1981-2010_nthin1_nbatch160_nchain1_nburn2000.RData")
+load("models/spPGOcc/model_spPGOcc_1981-2010_nthin100_nbatch12000_nchain4_nburn2e+05.RData")
 
 
 
 # inspect the Rhat and ESS values
-summary(out.sfMsPGOcc)
+summary(out.spPGOcc)
 
 # Beta occurrence covariates ------------------------------------------------------------------
 # visualize community occurrence covariates convergence
-plot(out.sfMsPGOcc, "beta.comm", density =FALSE)
+plot(out.spPGOcc, "beta", density =FALSE)
 
 # [Alternative] convergence of individual species
-# plot(out.sfMsPGOcc, "beta", density =FALSE)
+# plot(out.spPGOcc, "beta", density =FALSE)
 
 
 # Lamba latent loading ----------------------------------------------------
-summary(out.sfMsPGOcc$lambda.samples)
+summary(out.spPGOcc$lambda.samples)
 
 # inspect latent factor loading
-out.sfMsPGOcc$ESS$lambda #ESS
+out.spPGOcc$ESS$lambda #ESS
 # Phalangeridae-1      Dasyuridae-1         Canidae-1 
 # 0.000000          6.121878          5.062315 
 # Felidae-1       Leporidae-1    Macropodidae-1 
@@ -38,7 +38,7 @@ out.sfMsPGOcc$ESS$lambda #ESS
 # 3.975408          6.067882         61.970080 
 # Potoroidae-2 Pseudocheiridae-2      Vombatidae-2 
 # 5.809854         23.895240          5.342259 
-out.sfMsPGOcc$rhat$lambda.lower.tri #Rhat
+out.spPGOcc$rhat$lambda.lower.tri #Rhat
 # [1] 12.192902 13.818766  7.474647 10.476819  8.445917
 # [6] 13.091519 17.318131  2.410477 11.987074  2.908469
 # [11] 20.174667 11.760799  1.479879 11.517220 10.461248
@@ -52,7 +52,7 @@ out.sfMsPGOcc$rhat$lambda.lower.tri #Rhat
 # parameters and the occupancy intercepts may show slow mixing and/or convergence, 
 # which I discuss more in depth below as to what to do in this case.
 
-plot(out.sfMsPGOcc, 'lambda', density = FALSE) #Visual
+plot(out.spPGOcc, 'lambda', density = FALSE) #Visual
 # nothing converged atm
 
 
@@ -61,21 +61,21 @@ plot(out.sfMsPGOcc, 'lambda', density = FALSE) #Visual
 
 # Theta spatial decay parameter -------------------------------------------
 # Spatial decay parameter
-plot(out.sfMsPGOcc, 'theta', density = FALSE)
+plot(out.spPGOcc, 'theta', density = FALSE)
 
 
 
-summary(out.sfMsPGOcc)
+summary(out.spPGOcc)
 
-summary(out.sfMsPGOcc$lambda.samples)
+summary(out.spPGOcc$lambda.samples)
 
 # Takes a few seconds to run. 
-ppc.occ.out <- ppcOcc(out.sfMsPGOcc, 'freeman-tukey', group = 2)
+ppc.occ.out <- ppcOcc(out.spPGOcc, 'freeman-tukey', group = 2)
 
 # Species-specific intercepts
-plot(out.sfMsPGOcc$beta.samples[, 1:7], density = FALSE)
+plot(out.spPGOcc$beta.samples[, 1:7], density = FALSE)
 
-plot(out.sfMsPGOcc, "theta", density = FALSE)
+plot(out.spPGOcc, "theta", density = FALSE)
 # Calculate Bayesian p-values
 summary(ppc.occ.out)
 
@@ -156,41 +156,41 @@ filter_spOccupancy_chains <- function(model, chain_to_remove) {
 
 # Apply the function to your model
 chain_to_remove <- 2  # The problematic chain (red line in trace plots)
-filtered_sfMsPGOcc <- filter_spOccupancy_chains(out.sfMsPGOcc, chain_to_remove)
+filtered_spPGOcc <- filter_spOccupancy_chains(out.spPGOcc, chain_to_remove)
 
 # Check if filtering worked correctly
-original_samples <- dim(out.sfMsPGOcc$beta.comm.samples)[1]
-filtered_samples <- dim(filtered_sfMsPGOcc$beta.comm.samples)[1]
+original_samples <- dim(out.spPGOcc$beta.comm.samples)[1]
+filtered_samples <- dim(filtered_spPGOcc$beta.comm.samples)[1]
 cat("Original samples:", original_samples, "\n")
 cat("Filtered samples:", filtered_samples, "\n")
-cat("Expected filtered samples:", original_samples * (out.sfMsPGOcc$n.chains - 1) / out.sfMsPGOcc$n.chains, "\n")
+cat("Expected filtered samples:", original_samples * (out.spPGOcc$n.chains - 1) / out.spPGOcc$n.chains, "\n")
 
 # Now you can use your existing code with the filtered model
 # For example:
-summary(filtered_sfMsPGOcc)
-plot(filtered_sfMsPGOcc, "beta.comm", density = FALSE)
-plot(filtered_sfMsPGOcc, "phi", density = FALSE)
-ppc.occ.out <- ppcOcc(filtered_sfMsPGOcc, 'freeman-tukey', group = 2)
+summary(filtered_spPGOcc)
+plot(filtered_spPGOcc, "beta.comm", density = FALSE)
+plot(filtered_spPGOcc, "phi", density = FALSE)
+ppc.occ.out <- ppcOcc(filtered_spPGOcc, 'freeman-tukey', group = 2)
 summary(ppc.occ.out)
 
 
 
-summary(filtered_sfMsPGOcc$lambda.samples)
+summary(filtered_spPGOcc$lambda.samples)
 
 
 # Plot beta parameters for the first few species
-plot(filtered_sfMsPGOcc, "beta", density = FALSE, species = 1:3)
+plot(filtered_spPGOcc, "beta", density = FALSE, species = 1:3)
 
 # Plot lambda parameters 
-plot(filtered_sfMsPGOcc, "lambda", density = FALSE)
+plot(filtered_spPGOcc, "lambda", density = FALSE)
 
 # Plot theta parameters
-plot(filtered_sfMsPGOcc, "theta", density = FALSE)
+plot(filtered_spPGOcc, "theta", density = FALSE)
 
 
 # Quick check if filtering actually happened
-dim_original <- dim(out.sfMsPGOcc$beta.comm.samples)[1]
-dim_filtered <- dim(filtered_sfMsPGOcc$beta.comm.samples)[1]
+dim_original <- dim(out.spPGOcc$beta.comm.samples)[1]
+dim_filtered <- dim(filtered_spPGOcc$beta.comm.samples)[1]
 
 cat("Original dimensions:", dim_original, "\n")
 cat("Filtered dimensions:", dim_filtered, "\n")

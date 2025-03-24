@@ -2,22 +2,22 @@
 # Read command-line argument for array index
 args <- commandArgs(trailingOnly = TRUE)
 job_index <- as.integer(args[1])  # SLURM_ARRAY_TASK_ID passed here
- job_index = 1
+# job_index = 1
 
 
 
 # Define MCMC parameter ---------------------------------------------------
 # Define thinning factors and corresponding parameters
-thinning_factors <- c(1, 10, 100, 1000)
+thinning_factors <- c(1, 10, 50, 100)
 # sample_factors = c(1000, 2000, 4000, 8000, 16000, 32000)
 
 n.thin <- thinning_factors[job_index + 1]  # +1 because array starts at 0
 # n.thin = 1 # use this arg to test init value
 
 #n.sample = sample_factors[job_index + 1] # use this arg to test the init value with single chain
-n.sample = 1000
+n.sample = 1500
 
-n.burn = 2000 * n.thin # disregard first 2000 posterior samples (not iterations)  
+n.burn = 3000 * n.thin # disregard first 2000 posterior samples (not iterations)  
 
 batch.length = 25 # Keep it default
 n.batch <- ceiling((n.burn/n.thin + n.sample) * n.thin / 25) # total sample per chain = n_batch * batch.length
@@ -50,7 +50,7 @@ apply(data.sfMsPGOcc$y, 1, mean, na.rm = TRUE)
 # and the species are all quite similar (mammals)
 # We have some really rare species and some pretty common species 
 # So we try the model with a small number of latent factors (q in statistical notation)
-n.factors <- 2
+n.factors <- 1
 
 
 
@@ -62,13 +62,6 @@ n.factors <- 2
 
 # Current species (here family) ordering
 sp.names
-
-# Canidae      Dasyuridae         Felidae       Leporidae    Macropodidae 
-# 0.334317145     0.042929970     0.114032734     0.081298632     0.345854575 
-# Muridae     Peramelidae      Petauridae   Phalangeridae      Potoroidae 
-# 0.327609337     0.200697612     0.002414811     0.638314999     0.031660853 
-# Pseudocheiridae      Vombatidae 
-# 0.030587604     0.293265361 
 
 # Reorder species:
 # 1. Place a common species first
@@ -107,7 +100,6 @@ sp.ordered = c("Wallabia",
                # "Tachyglossus", 
                # "Thylogale", 
                )
-  
 # Create new detection-nondetection data matrix in the new order
 y.new = data.sfMsPGOcc$y[sp.ordered, ,]
 # Create a new data array
@@ -117,6 +109,13 @@ data.ordered$y = y.new
 str(data.ordered)
 
 apply(data.ordered$y, 1, mean, na.rm = TRUE)
+# Wallabia        Rattus        Vulpes         Canis   Trichosurus      Vombatus      Macropus 
+# 0.58737646    0.34321653    0.25864780    0.03942049    0.48528751    0.32457323    0.21922731 
+# Notamacropus         Felis      Dasyurus    Antechinus     Perameles       Isoodon Pseudocheirus 
+# 0.21945193    0.16183738    0.02392183    0.14746181    0.13376011    0.10220126    0.07176550 
+# Oryctolagus 
+# 0.07401168 
+
 
 # [optional] Specify initial value and prior distributions ---------------------------
 # If not specify, the model will use default value, but model is sensitive to initial, 
@@ -141,15 +140,24 @@ N <- nrow(data.ordered$y)
 # Check it out
 # lambda.inits
 
-# Initiate lambda value based on preliminary model
+# Initiate lambda value based on preliminary model iterations = 40000
 # Extract the mean values from the preliminary model
 lambda_means <- c(
-  # Factor 1
-  1.00000, -1.61435, 1.01789, 0.04355, 1.13166, 0.06906, 2.88112, 1.94999,
-  -0.35744, -0.40666, -0.70650, -1.35653, -0.93346, 0.07471, 0.80270,
-  # Factor 2
-  0.00000, 1.00000, -1.59665, 0.83760, 0.98227, -3.95214, -1.54852, -0.20547,
-  -0.14734, 1.02661, -0.66371, 1.09775, 1.84275, -1.28563, -0.46241
+  1.0000,   # Wallabia-1
+  -1.3095,  # Rattus-1
+  1.6395,   # Vulpes-1
+  -0.3115,  # Canis-1
+  0.6372,   # Trichosurus-1
+  0.1173,   # Vombatus-1
+  2.8253,   # Macropus-1
+  1.4969,   # Notamacropus-1
+  -0.3714,  # Felis-1
+  -0.7528,  # Dasyurus-1
+  -0.5066,  # Antechinus-1
+  -1.6724,  # Perameles-1
+  -1.5947,  # Isoodon-1
+  0.2345,   # Pseudocheirus-1
+  0.7909    # Oryctolagus-1
 )
 
 # Create the lambda.inits matrix
@@ -210,7 +218,7 @@ tuning <- list(phi = 0.5)
 # parallelize
 n.omp.threads <- 32 # within-chain parallelization
 verbose <- TRUE
-n.report <- 200 # Report progress at every 200th batch.
+n.report <- 50 # Report progress at every 200th batch.
 
 
 
@@ -259,7 +267,7 @@ out.sfMsPGOcc <- sfMsPGOcc(occ.formula = occ.formula,
                            #k.fold.seed = 123
 
 save(out.sfMsPGOcc, 
-     file = paste0("models/model_sfMsPGOcc_1981-2010_nthin", n.thin, "_nbatch", n.batch, "_nchain", n.chains, "_nburn", n.burn, ".RData"))
+     file = paste0("models/sfMsPGOcc/model_sfMsPGOcc_1981-2010_nthin", n.thin, "_nbatch", n.batch, "_nchain", n.chains, "_nburn", n.burn, ".RData"))
 
 end_time <- Sys.time()
 print(paste("End Time:", end_time))
