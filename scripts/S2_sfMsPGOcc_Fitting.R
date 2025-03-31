@@ -8,14 +8,14 @@ job_index <- as.integer(args[1])  # SLURM_ARRAY_TASK_ID passed here
 
 # Define MCMC parameter ---------------------------------------------------
 # Define thinning factors and corresponding parameters
-thinning_factors <- c(1, 10, 50, 100)
+thinning_factors <- c(1, 10, 50, 75, 100)
 # sample_factors = c(1000, 2000, 4000, 8000, 16000, 32000)
 
 n.thin <- thinning_factors[job_index + 1]  # +1 because array starts at 0
 # n.thin = 1 # use this arg to test init value
 
 #n.sample = sample_factors[job_index + 1] # use this arg to test the init value with single chain
-n.sample = 1500
+n.sample = 2000
 
 n.burn = 3000 * n.thin # disregard first 2000 posterior samples (not iterations)  
 
@@ -36,7 +36,9 @@ setwd(".")
 
 
 # Load the data -----------------------------------------------------------
-load("input/list_sfMsPGOcc_1980-2010.RData")
+load("input/list_343_1980-2010.RData")
+data.sfMsPGOcc = data
+
 str(data.sfMsPGOcc)
 # Species codes
 sp.names = rownames(data.sfMsPGOcc$y)
@@ -218,7 +220,7 @@ tuning <- list(phi = 0.5)
 # parallelize
 n.omp.threads <- 32 # within-chain parallelization
 verbose <- TRUE
-n.report <- 50 # Report progress at every 200th batch.
+n.report <- 100 # Report progress at every 200th batch.
 
 
 
@@ -257,7 +259,7 @@ out.sfMsPGOcc <- sfMsPGOcc(occ.formula = occ.formula,
                            n.omp.threads = n.omp.threads,
                            verbose = TRUE,
                            NNGP = TRUE,
-                           n.neighbors = 15,
+                           n.neighbors = 10,
                            n.report = n.report,
                            n.burn = n.burn,
                            n.thin = n.thin,
@@ -267,7 +269,7 @@ out.sfMsPGOcc <- sfMsPGOcc(occ.formula = occ.formula,
                            #k.fold.seed = 123
 
 save(out.sfMsPGOcc, 
-     file = paste0("models/sfMsPGOcc/model_sfMsPGOcc_1981-2010_nthin", n.thin, "_nbatch", n.batch, "_nchain", n.chains, "_nburn", n.burn, ".RData"))
+     file = paste0("models/22222/sfMsPGOcc/model_sfMsPGOcc_1981-2010_nthin", n.thin, "_nbatch", n.batch, "_nchain", n.chains, "_nburn", n.burn, ".RData"))
 
 end_time <- Sys.time()
 print(paste("End Time:", end_time))
