@@ -183,7 +183,13 @@ library(sf)
   # Exclude plots surveyed only once
     # Exclude plots surveyed only once and add numeric project IDs
     df_filtered <- df %>%
-      mutate(replicate = ((Year - 2012) %/% 2) + 1) %>%  # Assign two years as one replicate 
+      mutate(replicate = case_when(
+        Year %in% 2012:2013 ~ 1,  # First 3 years
+        Year %in% 2014:2015 ~ 2,  # Middle 4 years
+        Year %in% 2016:2017 ~ 3,
+        Year %in% 2018:2019 ~ 4,
+        Year %in% 2020:2021 ~ 5
+        )) %>%
       group_by(Easting_3577, Northing_3577) %>%  # Group by plotID
       filter(n_distinct(replicate) >= 2) %>%  # Keep plots with at least 2 unique replicates
       ungroup() %>% 
@@ -192,7 +198,7 @@ library(sf)
       # Create a numeric projectID by assigning integers to each unique character projectID
       mutate(ProjectID = as.integer(factor(ProjectID, levels = unique(ProjectID))))
     
-    write.csv(df_filtered, "input/df.csv", row.names = FALSE)
+     # write.csv(df_filtered, "input/df_55.csv", row.names = FALSE)
     
     # Count unique projectID values for random effect
     num_unique_projects <- length(unique(df_filtered$ProjectID))
@@ -282,7 +288,13 @@ apply(y, 1, sum, na.rm = TRUE)
 # FORMAT DETECTION COVARIATES ---------------------------------------------
 # Survey Effort matrix
   month.df = df_filtered %>% 
-    mutate(replicate =  ((Year - 2012) %/% 2) + 1) %>%  #Map 2012-2021 to 1-10
+    mutate(replicate = case_when(
+      Year %in% 2012:2013 ~ 1,  # First 3 years
+      Year %in% 2014:2015 ~ 2,  # Middle 4 years
+      Year %in% 2016:2017 ~ 3,
+      Year %in% 2018:2019 ~ 4,
+      Year %in% 2020:2021 ~ 5
+    )) %>%  
     group_by(plotID, replicate) %>%
     summarize(effort.months = n_distinct(paste(Year, Month, sep = "_"))) %>%  # Count unique (year, month) pairs
     ungroup() %>% 
@@ -421,15 +433,6 @@ print(rows_with_na) # plot 794 contains NA value
   y_clean <- y[ , -rows_with_na, ]                # Remove corresponding rows from y
   coords_clean <- coords[-rows_with_na, ]      # Remove corresponding rows from coords
   
-  
-  write.csv(beta_clean, "input/beta.csv", row.names = FALSE)
-  write.csv(effort_clean, "input/effort.csv", row.names = FALSE)
-  write.csv(project_clean, "input/project.csv", row.names = FALSE)
-  write.csv(y_clean, "input/y.csv", row.names = FALSE)
-  write.csv(coords_clean, "input/coords.csv", row.names = FALSE)
-  
-  
-  
   # Pack all things into a list object
   y = y_clean
   str(y)
@@ -444,31 +447,31 @@ print(rows_with_na) # plot 794 contains NA value
   coords = coords_clean
   str(coords_clean)
   
-  data.sfMsPGOcc <- list(y = y, 
-                    occ.covs = occ.covs, 
-                    det.covs = det.covs, 
-                    coords = coords)
-  str(data.sfMsPGOcc)
+  data <- list(y = y, 
+               occ.covs = occ.covs, 
+               det.covs = det.covs, 
+               coords = coords)
+  str(data)
   
-  save(data.sfMsPGOcc, file = "input/list_sfMsPGOcc_1980-2010.RData")
+  save(data, file = "input/list_22222_1980-2010.RData")
 
 # Test run
-# test.sfMsPGOcc <- spMsPGOcc(occ.formula = ~ scale(bio5) + I(scale(bio5)^2) +scale(bio6) + I(scale(bio6)^2) + 
-                              # scale(bio12) + I(scale(bio12)^2) + scale(bio15) + I(scale(bio15)^2) +
-                              # scale(dem) + I(scale(dem)^2) +
-                              # scale(slope) + I(scale(slope)^2) +
-                              # scale(aspect) +
-                              # scale(tpi) + I(scale(tpi)^2) +
-                              # scale(tri) + I(scale(tri)^2) +
-                              # scale(rock),
-                            # det.formula = ~ scale(effort) + (1|project), 
-                            # data = data.sfMsPGOcc,
-                            # n.batch = 10, 
-                            # batch.length = 25, 
-                            # cov.model = 'exponential', 
-                            # NNGP = TRUE, 
-                            # verbose = FALSE) 
+ test.sfMsPGOcc <- spMsPGOcc(occ.formula = ~ scale(bio5) + I(scale(bio5)^2) +scale(bio6) + I(scale(bio6)^2) + 
+                              scale(bio12) + I(scale(bio12)^2) + scale(bio15) + I(scale(bio15)^2) +
+                            scale(dem) + I(scale(dem)^2) +
+                            scale(slope) + I(scale(slope)^2) +
+                            scale(aspect) +
+                            scale(tpi) + I(scale(tpi)^2) +
+                            scale(tri) + I(scale(tri)^2) +
+                            scale(rock),
+                            det.formula = ~ scale(effort) + (1|project),
+                            data = data,
+                            n.batch = 10,
+                            batch.length = 25,
+                            cov.model = 'exponential',
+                            NNGP = TRUE,
+                            verbose = FALSE)
 
-# summary(test.sfMsPGOcc, level = 'community')
+ summary(test.sfMsPGOcc, level = 'community')
 
 # Data ready for model fitting

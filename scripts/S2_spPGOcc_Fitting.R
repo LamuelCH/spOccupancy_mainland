@@ -102,7 +102,6 @@ N <- nrow(data.ordered$y)
 # Create list of initial values.
 inits <- list(beta = 0, #species-level occurrence coefficients
               alpha = 0, #specie-level detection coefficients 
-              sigma.sq = 2, #species-specific factor loading
               phi = 3/mean(dist.data), #spatial range parameter
               z = apply(data.ordered$y, 1, max, na.rm = TRUE)) #latent occurrence variables
 
@@ -146,7 +145,7 @@ tuning <- list(phi = 0.5)
 # parallelize
 n.omp.threads <- 32 # within-chain parallelization
 verbose <- TRUE
-n.report <- 200 # Report progress at every 200th batch.
+n.report <- 100 # Report progress at every 200th batch.
 
 
 
@@ -179,7 +178,7 @@ out.spPGOcc = spPGOcc(occ.formula = occ.formula,
                       tuning = tuning, 
                       cov.model = cov.model, 
                       NNGP = TRUE, 
-                      n.neighbors = 15, 
+                      n.neighbors = 10, 
                       search.type = "cb", 
                       n.batch = n.batch,
                       batch.length = batch.length, 

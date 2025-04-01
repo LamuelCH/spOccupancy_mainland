@@ -14,7 +14,7 @@ library(spOccupancy)
 # ) and supply these as initial values to the spOccupancy function when running
 # the full model across multiple chains. 
 
-load("models/model_sfMsPGOcc_1981-2010_nthin1_nbatch120_nchain1_nburn2000.RData")
+load("models/343/init/model_343_sfMsPGOcc_1981-2010_nthin1_nbatch520_nchain1_nburn3000.RData")
 
 # Visual inspect if the value is settling
 plot(out.sfMsPGOcc, 'lambda', density = FALSE) 
@@ -109,7 +109,7 @@ summary(out.sfMsPGOcc$lambda.samples)
 
 
 # Load model --------------------------------------------------------------
-load("models/sfMsPGOcc/model_sfMsPGOcc_1981-2010_nthin10_nbatch1200_nchain4_nburn20000.RData")
+load("models/22222/sfMsPGOcc/model_22222_sfMsPGOcc_1981-2010_nthin1_nburn3000_nchain4_nsample2000_nfactors2_neighbors10.RData")
 
 
 # Overall model performance -----------------------------------------------
